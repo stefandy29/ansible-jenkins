@@ -1,0 +1,62 @@
+- name: install jenkins
+  hosts: redhat
+  become: yes
+  tasks:
+
+#  - name: upgrade all packages
+#    yum: 
+#      name: '*'
+#      state: latest
+
+  - name: install EPEL Repo
+    dnf:
+      name: epel-release
+      state: present
+  - name: install java
+    yum:
+      name: java-11-openjdk-devel.x86_64
+      state: present
+  
+  - name: adding the jenkins pkg repository
+    get_url:
+      url: http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo
+      dest: /etc/yum.repos.d/
+      mode: 0644
+      group: root
+      owner: root
+
+  - name: import repository GPG key
+    rpm_key: 
+      key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+      state: present
+ 
+  - name: install tzdata-java.noarch
+    dnf:
+      name: tzdata-java.noarch
+      state: latest
+ 
+  - name: Install Jenkins
+    yum:
+      name: jenkins
+      state: latest
+
+  - name: add port
+    firewalld:
+      port: "{{ item }}/tcp"
+      permanent: yes
+      state: enabled
+    loop:
+      - 22
+      - 80
+      - 8080
+      - 443
+
+  - name: restart firewalld
+    service:
+      name: firewalld
+      state: restarted
+
+  - name: Start jenkins
+    service:
+      name: jenkins
+      state: started
